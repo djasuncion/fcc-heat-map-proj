@@ -1,0 +1,13 @@
+{
+  "name": "fcc-heat-map-proj",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "DJ Asuncion <deorabbinjibe777@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "deploy": "gh-pages -d public"
+  },
+  "dependencies": {
+    "gh-pages": "^2.2.0"
+  }
+}
