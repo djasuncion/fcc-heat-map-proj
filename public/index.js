@@ -12,17 +12,37 @@ d3.json(URL)
     console.log(data);
     console.log(data.monthlyVariance);
 
-    const YEARS = data.monthlyVariance.map(d => d.year);
+    const VARIANCE = [];
+
+    data.monthlyVariance.map(d => {
+      if (!VARIANCE.includes(d.variance)) {
+        VARIANCE.push(d.variance);
+      }
+    });
+
+    VARIANCE.sort();
+    console.log(VARIANCE);
+    console.log(VARIANCE.length);
+    console.log(VARIANCE.length / 4);
+    const VARIANCE_EXTENT = d3.extent(VARIANCE);
+
+    const YEARS = [];
+
+    data.monthlyVariance.map(d => {
+      if (!YEARS.includes(d.year)) {
+        YEARS.push(d.year);
+      }
+    });
 
     const yearsExtent = d3.extent(YEARS);
-    console.log(YEARS);
-    console.log(d3.max(YEARS));
-    console.log(yearsExtent);
 
     data.monthlyVariance.forEach(d => (d.month -= 1));
 
-    const width = 900,
+    const width = 1200,
       height = 400,
+      barWidth = width / data.monthlyVariance.length,
+      barHeight = height / 12,
+      cols = ["#fee5d9", "#fcae91", "#fb6a4a", "#cb181d"],
       padding = {
         left: 20,
         right: 20,
@@ -46,34 +66,61 @@ d3.json(URL)
     const xScale = d3
       .scaleBand()
       .domain(YEARS)
-      .range([padding.left, width - padding.right]);
+      .range([padding.left * 10, width - padding.right]);
 
     const xAxis = d3
       .axisBottom(xScale)
-      .tickValues(xScale.domain().filter(year => year % 10 === 0))
+      .tickValues(YEARS.filter(year => year % 10 === 0))
       .tickSizeOuter(0);
-
     svg
       .append("g")
       .attr(
         "transform",
-        `translate(${padding.left}, ${height - padding.bottom})`
+        `translate(${padding.left + 30}, ${height - padding.bottom})`
       )
       .attr("id", "x-axis")
       .call(xAxis);
 
     const yScale = d3
       .scaleBand()
-      .domain([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-      .rangeRound([padding.top, height - padding.top]);
+      .domain(data.monthlyVariance.map(d => d.month))
+      .range([padding.top, height - padding.bottom]);
 
-    const yAxis = d3.axisLeft(yScale).tickSizeOuter(0);
+    const yAxis = d3
+      .axisLeft(yScale)
+      .tickSizeOuter(0)
+      .tickFormat(month => {
+        let format = d3.timeFormat("%B");
+        let date = new Date(0);
+        date.setUTCMonth(month);
+        return format(date);
+      });
 
     svg
       .append("g")
-      .attr("transform", `translate(${padding.left}, ${padding.top})`)
+      .attr(
+        "transform",
+        `translate(${padding.left * 12.5}, ${padding.top - 10})`
+      )
       .attr("id", "y-axis")
       .call(yAxis);
+
+    svg
+      .append("g")
+      .attr("transform", `translate(${padding.left + 30}, ${padding.top - 11})`)
+      .selectAll("rect")
+      .data(data.monthlyVariance)
+      .enter()
+      .append("rect")
+      .attr("class", "cell")
+      .attr("data-month", d => d.month)
+      .attr("data-year", d => d.year)
+      .attr("data-temp", d => d.variance)
+      .attr("x", (d, i) => xScale(d.year))
+      .attr("y", (d, i) => yScale(d.month))
+      .attr("width", barWidth)
+      .attr("height", barHeight)
+      .attr("fill", "green");
   })
   .catch(error => {
     console.error(error);
