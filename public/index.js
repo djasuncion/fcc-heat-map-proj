@@ -25,6 +25,7 @@ d3.json(URL)
     console.log(VARIANCE.length);
     console.log(VARIANCE.length / 4);
     const VARIANCE_EXTENT = d3.extent(VARIANCE);
+    console.log(VARIANCE_EXTENT);
 
     const YEARS = [];
 
@@ -42,7 +43,7 @@ d3.json(URL)
       height = 400,
       barWidth = width / data.monthlyVariance.length,
       barHeight = height / 12,
-      cols = ["#fee5d9", "#fcae91", "#fb6a4a", "#cb181d"],
+      cols = ["#1b9e77", "#d95f02", "#7570b3", "#e7298a"],
       padding = {
         left: 20,
         right: 20,
@@ -60,6 +61,7 @@ d3.json(URL)
     const svg = d3
       .select("body")
       .append("svg")
+      .attr("id", "viz")
       .attr("width", width + padding.left + padding.right)
       .attr("height", height + padding.top + padding.bottom);
 
@@ -76,7 +78,7 @@ d3.json(URL)
       .append("g")
       .attr(
         "transform",
-        `translate(${padding.left + 30}, ${height - padding.bottom})`
+        `translate(${padding.left - 160}, ${height - padding.bottom + 1.725})`
       )
       .attr("id", "x-axis")
       .call(xAxis);
@@ -98,16 +100,23 @@ d3.json(URL)
 
     svg
       .append("g")
-      .attr(
-        "transform",
-        `translate(${padding.left * 12.5}, ${padding.top - 10})`
-      )
+      .attr("transform", `translate(${padding.left * 3}, ${padding.top - 10})`)
       .attr("id", "y-axis")
       .call(yAxis);
 
+    //TOOLTIP
+    const tooltip = d3
+      .select("body")
+      .append("div")
+      .attr("id", "tooltip")
+      .style("opacity", 0);
+
     svg
       .append("g")
-      .attr("transform", `translate(${padding.left + 30}, ${padding.top - 11})`)
+      .attr(
+        "transform",
+        `translate(${padding.left - 159}, ${padding.top - 10})`
+      )
       .selectAll("rect")
       .data(data.monthlyVariance)
       .enter()
@@ -118,9 +127,92 @@ d3.json(URL)
       .attr("data-temp", d => d.variance)
       .attr("x", (d, i) => xScale(d.year))
       .attr("y", (d, i) => yScale(d.month))
-      .attr("width", barWidth)
+      .attr("width", barWidth + 3)
       .attr("height", barHeight)
-      .attr("fill", "green");
+      .attr("fill", d => {
+        if (d.variance <= 0) {
+          return cols[0];
+        } else if (d.variance <= 2) {
+          return cols[1];
+        } else if (d.variance <= 4) {
+          return cols[2];
+        } else {
+          return cols[3];
+        }
+      })
+      .on("mouseover", (d, i) => {
+        function formatTime(month) {
+          let format = d3.timeFormat("%B");
+          let date = new Date(0);
+          date.setUTCMonth(month);
+          return format(date);
+        }
+
+        tooltip
+          .transition()
+          .duration(200)
+          .style("opacity", 0.9);
+
+        tooltip
+          .html(
+            `
+          <span>${formatTime(d.month)}</span>, <span>${d.year}</span>
+          <br/>
+          Variance: <span>${d.variance}</span> 
+          <br/>
+          Temp: <span>${data.baseTemperature +
+            d.variance}</span>&#8451;<span></span>
+          `
+          )
+          .attr("data-year", d.year)
+          .style("left", `${xScale(d.year) - 70}px`) //`${xScale(d.year)}px
+          .style("top", `${yScale(d.month) + 90}px`); //${yScale(d.month)}px
+      })
+      .on("mouseout", () => {
+        tooltip.style("opacity", 0);
+      });
+
+    //LEGEND
+
+    const legendWidth = 200,
+      legendHeight = 100;
+
+    const legendScale = d3
+      .scaleBand()
+      .domain(["< 0", "<= 2", "<= 4", "=> 4"])
+      .range([0, legendWidth]);
+
+    const legendLinear = d3
+      .scaleLinear()
+      .domain([0, 4])
+      .range([0, legendWidth]);
+
+    const legendAxisX = d3.axisBottom(legendScale).tickSizeOuter(0);
+
+    const legendSvg = d3
+      .select("body")
+      .append("svg")
+      .attr("height", legendHeight)
+      .attr("width", legendWidth);
+
+    const legendX = legendSvg
+      .append("g")
+      .attr("transform", `translate(0, 35)`)
+      .call(legendAxisX);
+
+    const legend = legendSvg
+      .append("g")
+      .attr("id", "legend")
+      .attr("transform", `translate(0, 10)`)
+      .selectAll("rect")
+      .data(cols)
+      .enter()
+      .append("rect")
+      .attr("x", (d, i) => legendLinear(i))
+      .attr("y", 5)
+      .attr("width", 90)
+      .attr("height", 20)
+      .attr("fill", (d, i) => cols[i]);
   })
   .catch(error => {
     console.error(error);
