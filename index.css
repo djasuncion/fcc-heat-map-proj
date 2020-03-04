@@ -9,6 +9,21 @@
 body {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: center;
+  height: 100vh;
+}
+
+#tooltip {
+  position: absolute;
+  background-color: black;
+  color: white;
+  border: 1px solid purple;
+  border-radius: 10px;
+  padding: 1rem;
+  pointer-events: none;
+}
+
+.cell:hover {
+  fill: red;
 }
